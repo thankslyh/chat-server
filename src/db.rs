@@ -2,6 +2,7 @@ use std::time;
 use sqlx::mysql::{ MySqlPoolOptions, MySqlPool };
 
 pub mod user;
+pub mod conversation;
 
 pub async fn init(data_url: &str) -> Result<MySqlPool, sqlx_core::error::Error> {
     MySqlPoolOptions::new()
