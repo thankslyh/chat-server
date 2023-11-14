@@ -1,14 +1,13 @@
 use actix_web::Responder;
 use serde::Deserialize;
 use sqlx::MySqlPool;
-use crate::db;
-use crate::model::user::User;
+use crate::{AppState, db, model};
 use super::*;
 
 const PREFIX: &'static str = "/user";
 #[get("/list")]
-async fn user_list(pool: web::Data<MySqlPool>) -> actix_web::Result<impl Responder> {
-    let list = crate::db::user::get_list(&pool).await?;
+async fn user_list(app_state: web::Data<AppState>) -> actix_web::Result<impl Responder> {
+    let list = crate::db::user::get_list(&app_state.conn).await.expect("");
     Ok(web::Json(list))
 }
 
@@ -24,12 +23,10 @@ pub struct Acc {
 
 }
 #[post("/create")]
-async fn user_create(pool: web::Data<MySqlPool>, info: web::Form<Acc>) -> actix_web::Result<impl Responder> {
-    let mut user = User::default();
-    let uid = uuid::Uuid::new_v4();
+async fn user_create(app_state: web::Data<AppState>, info: web::Form<Acc>) -> actix_web::Result<impl Responder> {
+    let mut user = model::user::Model::default();
     user.email = info.email.to_owned();
-    user.uid = uid.to_owned().to_string();
-    db::user::create(&pool, &mut user).await;
+    let res = db::user::create(&app_state.conn, &user).await.expect("");
     Ok(web::Json(user.clone()))
 }
 
