@@ -1,10 +1,18 @@
 use sea_orm::DatabaseConnection;
 
-pub mod routes;
-pub mod db;
+pub mod service;
 pub mod model;
+pub mod routes;
+pub mod errors;
+
+#[derive(Debug, Clone)]
+pub struct CtxUser {
+    pub id: u64,
+    pub uid: String,
+}
 
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub conn: DatabaseConnection,
+    pub user: Option<CtxUser>,
 }
