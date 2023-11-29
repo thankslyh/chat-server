@@ -1,15 +1,14 @@
 use crate::errors::CustomError;
-use crate::routes::{CustomError, ServiceResponse};
+use crate::routes::ServiceResponse;
 use crate::{service, AppState};
 use actix_web::{post, web, Responder};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 
 const PREFIX: &'static str = "/friend";
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct AddForm {
-    uid: &'static str,
+    uid: String,
 }
 
 #[post("/add")]
@@ -18,19 +17,23 @@ pub async fn add(
     form: web::Form<AddForm>,
 ) -> actix_web::Result<impl Responder> {
     let db = &app_state.conn;
-    let user = &app_state.user.unwrap();
-    let exist = service::friend::relation_is_exist(db, user.uid.as_str()).await?;
+    let user = &app_state.user.as_ref().unwrap();
+    let exist = service::friend::relation_is_exist(db, user.uid.as_str())
+        .await
+        .expect("");
     if exist {
-        return web::Json(ServiceResponse {
+        return Ok(web::Json(ServiceResponse {
             code: CustomError::BusinessFriendExist.into(),
-            data: None,
-            msg: CustomError::BusinessFriendExist.description(),
-        });
+            data: Some(0),
+            msg: "",
+        }));
     }
-    service::friend::add_friend(db, user.uid.as_str(), form.uid).await?;
-    web::Json(ServiceResponse {
-        code: CustomError::Success,
-        data: None,
+    service::friend::add_friend(db, user.uid.as_str(), &form.uid)
+        .await
+        .expect("");
+    Ok(web::Json(ServiceResponse {
+        code: CustomError::Success.into(),
+        data: Some(0),
         msg: "",
-    })
+    }))
 }

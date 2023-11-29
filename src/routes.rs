@@ -9,14 +9,14 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use Into;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 pub struct ServiceResponse<'a, T>
 where
     T: Debug + Serialize,
 {
-    pub code: CustomError::BusinessFriendExist,
-    pub data: T,
-    msg: &'a str,
+    pub code: usize,
+    pub data: Option<T>,
+    pub msg: &'a str,
 }
 
 #[derive(Debug, Serialize, Clone, Deserialize)]

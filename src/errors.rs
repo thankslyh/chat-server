@@ -12,7 +12,7 @@ pub enum CustomError {
     BusinessFriendExist,
 }
 
-impl From<CustomError> for u32 {
+impl From<CustomError> for usize {
     fn from(value: CustomError) -> Self {
         match value {
             Success => 200,
@@ -34,21 +34,6 @@ impl Display for CustomError {
     }
 }
 
-impl Error for CustomError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        self.source()
-    }
-
-    fn description(&self) -> &str {
-        match self {
-            Success => format!("success").as_str(),
-            AuthFail(s) => format!("auth fail:{}", s).as_str(),
-            InternalServerError(s) => format!("内部服务错误：{}", s).as_str(),
-            BusinessFriendExist => format!("业务错误").as_str(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::errors::CustomError;
@@ -56,7 +41,7 @@ mod tests {
     #[test]
     fn test_into() {
         let e = CustomError::AuthFail("用户不存在");
-        let val: u32 = e.into();
+        let val: usize = e.into();
         assert_eq!(401, val)
     }
 }

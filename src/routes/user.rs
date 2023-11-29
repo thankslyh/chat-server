@@ -16,8 +16,8 @@ async fn user_list(app_state: web::Data<AppState>) -> actix_web::Result<impl Res
         total: list.1,
     };
     let res = ServiceResponse {
-        code: CustomError::Success,
-        data,
+        code: CustomError::Success.into(),
+        data: Some(data),
         msg: "",
     };
     Ok(web::Json(res))
@@ -33,8 +33,8 @@ async fn user_detail(
         .await
         .expect("");
     let res = ServiceResponse::<Option<model::user::Model>> {
-        code: CustomError::Success,
-        data: res,
+        code: CustomError::Success.into(),
+        data: Some(res),
         msg: "",
     };
     println!("{:#?}", res);
@@ -60,8 +60,8 @@ async fn user_create(
         .try_into_model()
         .expect("");
     let res = ServiceResponse {
-        code: CustomError::Success,
-        data: tmp_res,
+        code: CustomError::Success.into(),
+        data: Some(tmp_res),
         msg: "",
     };
     Ok(web::Json(res))
@@ -110,8 +110,8 @@ async fn user_search(
         .await
         .expect("");
     let res = ServiceResponse {
-        code: CustomError::Success,
-        data: list,
+        code: CustomError::Success.into(),
+        data: Some(list),
         msg: "",
     };
     Ok(web::Json(res))
