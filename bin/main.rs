@@ -11,7 +11,7 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
     let user = chat_server::CtxUser {
         id: 1,
-        uid: "caf1577c-8029-4594-aa76-3915a9719f6c".to_string()
+        uid: "caf1577c-8029-4594-aa76-3915a9719f6c".to_string(),
     };
     let state = chat_server::AppState {
         conn: pool,
@@ -23,6 +23,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Logger::new("%a %{User-Agent}i"))
             .app_data(web::Data::new(state.clone()))
             .configure(chat_server::routes::user::entry)
+            .configure(chat_server::routes::friends::entry)
     })
     .bind(("127.0.0.1", 10001))?
     .run()

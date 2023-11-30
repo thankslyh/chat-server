@@ -4,6 +4,7 @@ pub mod service;
 pub mod model;
 pub mod routes;
 pub mod errors;
+mod middleware;
 
 #[derive(Debug, Clone)]
 pub struct CtxUser {

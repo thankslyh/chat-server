@@ -1,4 +1,4 @@
-mod friends;
+pub mod friends;
 pub mod user;
 
 // pub mod conversation;

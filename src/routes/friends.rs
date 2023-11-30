@@ -37,3 +37,7 @@ pub async fn add(
         msg: "",
     }))
 }
+
+pub fn entry(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::scope(PREFIX).service(add));
+}
