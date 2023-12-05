@@ -2,13 +2,18 @@ use self::CustomError::*;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum CustomError {
+    #[error("成功")]
     Success,
+    #[error("内部错误")]
     InternalServerError(String),
+    #[error("auth fail")]
     AuthFail(&'static str),
     // 业务错误
+    #[error("好友信息已经存在")]
     BusinessFriendExist,
 }
 
@@ -19,17 +24,6 @@ impl From<CustomError> for usize {
             InternalServerError(_) => 500,
             AuthFail(_) => 401,
             BusinessFriendExist => 100_101,
-        }
-    }
-}
-
-impl Display for CustomError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Success => write!(f, "success"),
-            AuthFail(s) => write!(f, "auth fail:{}", s),
-            InternalServerError(s) => write!(f, "内部服务错误：{}", s),
-            BusinessFriendExist => write!(f, "业务错误"),
         }
     }
 }

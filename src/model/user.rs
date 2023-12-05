@@ -44,23 +44,29 @@ impl Query {
         db: &DbConn,
         page: u64,
         page_per: u64,
-    ) -> Result<(Vec<Model>, u64), DbErr> {
+    ) -> anyhow::Result<(Vec<Model>, u64)> {
         let paginator = Entity::find()
             .order_by_asc(Column::Id)
             .paginate(db, page_per);
         let num_pages = paginator.num_pages().await?;
-        paginator.fetch_page(page - 1).await.map(|p| (p, num_pages))
+        let res = paginator
+            .fetch_page(page - 1)
+            .await
+            .map(|p| (p, num_pages))?;
+        Ok(res)
     }
 
-    pub async fn get_user_by_id(db: &DbConn, id: u64) -> Result<Option<Model>, DbErr> {
-        Entity::find_by_id(id).one(db).await
+    pub async fn get_user_by_id(db: &DbConn, id: u64) -> anyhow::Result<Option<Model>> {
+        let res = Entity::find_by_id(id).one(db).await?;
+        Ok(res)
     }
 
-    pub async fn search_by_nickname(db: &DbConn, nickname: &str) -> Result<Vec<Model>, DbErr> {
-        Entity::find()
+    pub async fn search_by_nickname(db: &DbConn, nickname: &str) -> anyhow::Result<Vec<Model>> {
+        let res = Entity::find()
             .filter(Column::Nickname.contains(nickname))
             .all(db)
-            .await
+            .await?;
+        Ok(res)
     }
 }
 
