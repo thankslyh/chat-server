@@ -23,18 +23,24 @@ impl ActiveModelBehavior for ActiveModel {}
 pub struct Query;
 
 impl Query {
-    pub async fn get_friend_by_id(db: &DbConn, id: i64) -> Result<Option<Model>, DbErr> {
+    pub async fn get_friend_by_id(db: &DbConn, id: i64) -> anyhow::Result<Option<Model>, DbErr> {
         Entity::find_by_id(id).one(db).await
     }
 
-    pub async fn get_friend_by_uid(db: &DbConn, who_uid: &str) -> Result<Option<Model>, DbErr> {
+    pub async fn get_friend_by_uid(
+        db: &DbConn,
+        who_uid: &str,
+    ) -> anyhow::Result<Option<Model>, DbErr> {
         Entity::find()
             .filter(Column::WhoUid.contains(who_uid))
             .one(db)
             .await
     }
 
-    pub async fn get_friend_list_by_uid(db: &DbConn, who_uid: &str) -> Result<Vec<Model>, DbErr> {
+    pub async fn get_friend_list_by_uid(
+        db: &DbConn,
+        who_uid: &str,
+    ) -> anyhow::Result<Vec<Model>, DbErr> {
         Entity::find()
             .filter(Column::WhoUid.contains(who_uid))
             .all(db)
@@ -45,7 +51,7 @@ impl Query {
 pub struct Mutation;
 
 impl Mutation {
-    pub async fn build(db: &DbConn, who_uid: &str, relate_id: &str) -> Result<(), DbErr> {
+    pub async fn build(db: &DbConn, who_uid: &str, relate_id: &str) -> anyhow::Result<(), DbErr> {
         let who_user = ActiveModel {
             who_uid: Set(who_uid.to_string()),
             relate_uid: Set(relate_id.to_string()),

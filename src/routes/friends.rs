@@ -23,7 +23,7 @@ pub async fn add(
         .expect("");
     if exist {
         return Ok(web::Json(ServiceResponse {
-            code: CustomError::BusinessFriendExist.into(),
+            code: 100,
             data: Some(0),
             msg: "",
         }));

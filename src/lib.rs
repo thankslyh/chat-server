@@ -1,10 +1,11 @@
 use sea_orm::DatabaseConnection;
 
-pub mod service;
-pub mod model;
-pub mod routes;
 pub mod errors;
 mod middleware;
+pub mod model;
+pub mod routes;
+pub mod service;
+pub mod socket;
 
 #[derive(Debug, Clone)]
 pub struct CtxUser {

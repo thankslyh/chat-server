@@ -2,7 +2,7 @@ use super::*;
 use crate::model::user::Sex;
 use crate::{model, service, AppState};
 use actix_web::Responder;
-use sea_orm::TryIntoModel;
+use sea_orm::{DbErr, TryIntoModel};
 use serde::Deserialize;
 
 const PREFIX: &'static str = "/user";
@@ -10,7 +10,12 @@ const PREFIX: &'static str = "/user";
 async fn user_list(app_state: web::Data<AppState>) -> actix_web::Result<impl Responder> {
     let list = crate::service::user::get_list(&app_state.conn)
         .await
-        .expect("");
+        .map_err(|e| match e.downcast_ref::<DbErr>() {
+            Some(_) => CustomError::InternalServerError(e.to_string()),
+            None => {
+                CustomError::CommonBusinessError(format!("获取好友列表失败，{}", &e.to_string()))
+            }
+        })?;
     let data = Pagination::<model::user::Model> {
         list: list.0,
         total: list.1,

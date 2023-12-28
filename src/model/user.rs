@@ -73,8 +73,8 @@ impl Query {
 pub struct Mutation;
 
 impl Mutation {
-    pub async fn create_user(db: &DbConn, user: &Model) -> Result<ActiveModel, DbErr> {
-        ActiveModel {
+    pub async fn create_user(db: &DbConn, user: &Model) -> anyhow::Result<ActiveModel> {
+        let model = ActiveModel {
             email: Set(user.email.to_owned()),
             uid: Set(uuid::Uuid::new_v4().to_string()),
             nickname: Set(user.nickname.to_owned()),
@@ -82,10 +82,15 @@ impl Mutation {
             ..Default::default()
         }
         .save(db)
-        .await
+        .await?;
+        Ok(model)
     }
 
-    pub async fn update_user_by_id(db: &DbConn, id: u64, user: &Model) -> Result<Model, DbErr> {
+    pub async fn update_user_by_id(
+        db: &DbConn,
+        id: u64,
+        user: &Model,
+    ) -> anyhow::Result<Model, DbErr> {
         let mut tmp_user = Entity::find_by_id(id)
             .one(db)
             .await?
