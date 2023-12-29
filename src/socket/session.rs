@@ -1,6 +1,8 @@
+use crate::socket::server;
 use crate::socket::*;
 use actix::prelude::*;
 use actix_web_actors::ws;
+use log::logger;
 use std::time::{Duration, Instant};
 
 #[derive(Debug)]
@@ -24,11 +26,12 @@ impl ChatSession {
                 // heartbeat timed out
                 println!("Websocket Client heartbeat failed, disconnecting!");
 
-                // notify chat server
-                act.addr.do_send(server::Disconnect { id: act.id });
-
-                // stop actor
-                ctx.stop();
+                if !ctx.state().stopping() {
+                    // notify chat server
+                    act.addr.do_send(server::Disconnect { id: act.id });
+                    // stop actor
+                    ctx.stop();
+                }
 
                 // don't try to send a ping
                 return;
@@ -72,6 +75,11 @@ impl Actor for ChatSession {
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
         self.addr.do_send(server::Disconnect { id: self.id });
+        self.addr.do_send(server::ClientMessage {
+            from: 0,
+            to: self.id,
+            message: server::Message(format!("session-{} 离开了聊天室", self.id)),
+        });
         Running::Stop
     }
 }
@@ -79,6 +87,7 @@ impl Actor for ChatSession {
 impl Handler<server::Message> for ChatSession {
     type Result = ();
     fn handle(&mut self, msg: server::Message, ctx: &mut Self::Context) -> Self::Result {
+        println!("handler server:Message {:#?}", msg);
         ctx.text(msg.0)
     }
 }
@@ -92,9 +101,26 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChatSession {
                 return;
             }
         };
+        log::debug!("stream handler receive: {msg:?}");
         match msg {
-            ws::Message::Text(msg) => ctx.text(msg),
-            _ => println!("不支持的方式"),
+            ws::Message::Text(msg) => {
+                self.addr.do_send(server::ClientMessage {
+                    from: self.id,
+                    to: self.id,
+                    message: server::Message(msg.to_string()),
+                });
+            }
+            ws::Message::Pong(_) => {
+                self.hb = Instant::now();
+            }
+            ws::Message::Ping(_) => {
+                ctx.pong(b"");
+                self.hb = Instant::now();
+            }
+            ws::Message::Close(_) => {
+                self.stopping(ctx);
+            }
+            _ => println!("不支持的方式{:#?}", msg),
         }
     }
 }
