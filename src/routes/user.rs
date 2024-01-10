@@ -1,7 +1,12 @@
 use super::*;
+use crate::errors::BusinessCode;
+use crate::middleware::Jwt;
 use crate::model::user::Sex;
 use crate::{model, service, AppState};
 use actix_web::Responder;
+use futures_util::TryFutureExt;
+use jwt::header::HeaderType::JsonWebToken;
+use sea_orm::DbErr::Custom;
 use sea_orm::{DbErr, TryIntoModel};
 use serde::Deserialize;
 
@@ -12,16 +17,17 @@ async fn user_list(app_state: web::Data<AppState>) -> actix_web::Result<impl Res
         .await
         .map_err(|e| match e.downcast_ref::<DbErr>() {
             Some(_) => CustomError::InternalServerError(e.to_string()),
-            None => {
-                CustomError::CommonBusinessError(format!("获取好友列表失败，{}", &e.to_string()))
-            }
+            None => CustomError::BusinessError(
+                BusinessCode::Success,
+                format!("获取好友列表失败，{}", &e.to_string()),
+            ),
         })?;
     let data = Pagination::<model::user::Model> {
         list: list.0,
         total: list.1,
     };
     let res = ServiceResponse {
-        code: CustomError::Success.into(),
+        code: BusinessCode::Success as usize,
         data: Some(data),
         msg: "",
     };
@@ -38,7 +44,7 @@ async fn user_detail(
         .await
         .expect("");
     let res = ServiceResponse::<Option<model::user::Model>> {
-        code: CustomError::Success.into(),
+        code: BusinessCode::Success as usize,
         data: Some(res),
         msg: "",
     };
@@ -50,6 +56,7 @@ async fn user_detail(
 pub struct Acc {
     email: String,
     nickname: Option<String>,
+    code: Option<String>,
 }
 #[post("/create")]
 async fn user_create(
@@ -65,11 +72,49 @@ async fn user_create(
         .try_into_model()
         .expect("");
     let res = ServiceResponse {
-        code: CustomError::Success.into(),
+        code: BusinessCode::Success as usize,
         data: Some(tmp_res),
         msg: "",
     };
     Ok(web::Json(res))
+}
+
+#[post("/login")]
+async fn user_login(
+    app_state: web::Data<AppState>,
+    body: web::Json<Acc>,
+) -> actix_web::Result<impl Responder> {
+    let db = &app_state.conn;
+    let email = &body.email;
+    let res = service::user::get_user_by_email(&app_state.conn, &email)
+        .await
+        .map_err(|err| CustomError::InternalServerError(err.to_string()))?;
+    if let Some(user) = res.first() {
+        let token = Jwt::new(&user.email, &user.uid)
+            .gen_token()
+            .map_err(|e| CustomError::InternalServerError(e.to_string()))?;
+        return Ok(web::Json(ServiceResponse {
+            code: BusinessCode::Success as usize,
+            data: Some(token),
+            msg: "",
+        }));
+    }
+    let mut user = model::user::Model::default();
+    user.nickname = email.clone();
+    user.email = email.clone();
+    let user = service::user::create(db, &user)
+        .await
+        .map_err(|e| CustomError::InternalServerError(e.to_string()))?
+        .try_into_model()
+        .map_err(|e| CustomError::InternalServerError(e.to_string()))?;
+    let token = Jwt::new(&user.email, &user.uid)
+        .gen_token()
+        .map_err(|e| CustomError::InternalServerError(e.to_string()))?;
+    Ok(web::Json(ServiceResponse {
+        code: BusinessCode::Success as usize,
+        data: Some(token),
+        msg: "",
+    }))
 }
 
 #[derive(Deserialize)]
@@ -115,7 +160,7 @@ async fn user_search(
         .await
         .expect("");
     let res = ServiceResponse {
-        code: CustomError::Success.into(),
+        code: BusinessCode::Success as usize,
         data: Some(list),
         msg: "",
     };
@@ -130,6 +175,7 @@ pub fn entry(cfg: &mut web::ServiceConfig) {
             .service(user_create)
             .service(user_update)
             .service(user_delete)
-            .service(user_search),
+            .service(user_search)
+            .service(user_login),
     );
 }

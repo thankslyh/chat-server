@@ -16,3 +16,7 @@ pub async fn get_user_by_id(conn: &DbConn, id: u64) -> anyhow::Result<Option<use
 pub async fn search(conn: &DbConn, keyword: &str) -> anyhow::Result<Vec<user::Model>> {
     user::Query::search_by_nickname(conn, keyword).await
 }
+
+pub async fn get_user_by_email(conn: &DbConn, keyword: &str) -> anyhow::Result<Vec<user::Model>> {
+    user::Query::get_by_email(conn, keyword).await
+}

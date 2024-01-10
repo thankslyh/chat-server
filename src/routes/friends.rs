@@ -1,4 +1,4 @@
-use crate::errors::CustomError;
+use crate::errors::{BusinessCode, CustomError};
 use crate::routes::ServiceResponse;
 use crate::{service, AppState};
 use actix_web::{post, web, Responder};
@@ -32,7 +32,7 @@ pub async fn add(
         .await
         .expect("");
     Ok(web::Json(ServiceResponse {
-        code: CustomError::Success.into(),
+        code: BusinessCode::Success as usize,
         data: Some(0),
         msg: "",
     }))

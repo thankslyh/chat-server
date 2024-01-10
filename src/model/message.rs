@@ -4,7 +4,18 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use ContentType::*;
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, Default, sqlx::Type)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct TextContent(String);
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ImageContent {
+    pub width: usize,
+    pub height: usize,
+    pub origin_url: String,
+    pub thumb_url: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Default, sqlx::Type)]
 pub enum ContentType {
     #[default]
     Text = 1,

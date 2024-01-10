@@ -76,8 +76,7 @@ impl Actor for ChatSession {
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
         self.addr.do_send(server::Disconnect { id: self.id });
         self.addr.do_send(server::ClientMessage {
-            from: 0,
-            to: self.id,
+            skip_id: self.id,
             message: server::Message(format!("session-{} 离开了聊天室", self.id)),
         });
         Running::Stop
@@ -105,8 +104,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChatSession {
         match msg {
             ws::Message::Text(msg) => {
                 self.addr.do_send(server::ClientMessage {
-                    from: self.id,
-                    to: self.id,
+                    skip_id: self.id,
                     message: server::Message(msg.to_string()),
                 });
             }

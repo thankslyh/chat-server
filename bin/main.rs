@@ -25,6 +25,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(middleware::Logger::default())
             .wrap(middleware::Logger::new("%a %{User-Agent}i"))
+            .wrap(chat_server::middleware::Authoriser::new(vec![
+                "/user/login",
+            ]))
             .app_data(web::Data::new(state.clone()))
             .app_data(web::Data::new(serv.clone()))
             .configure(chat_server::routes::user::entry)

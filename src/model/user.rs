@@ -68,6 +68,14 @@ impl Query {
             .await?;
         Ok(res)
     }
+
+    pub async fn get_by_email(db: &DbConn, email: &str) -> anyhow::Result<Vec<Model>> {
+        let res = Entity::find()
+            .filter(Column::Email.contains(email))
+            .all(db)
+            .await?;
+        Ok(res)
+    }
 }
 
 pub struct Mutation;

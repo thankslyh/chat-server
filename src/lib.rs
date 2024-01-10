@@ -1,7 +1,10 @@
+#[macro_use]
+extern crate lazy_static;
+
 use sea_orm::DatabaseConnection;
 
 pub mod errors;
-mod middleware;
+pub mod middleware;
 pub mod model;
 pub mod routes;
 pub mod service;
