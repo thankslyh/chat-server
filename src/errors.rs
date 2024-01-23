@@ -15,12 +15,12 @@ pub enum CustomError {
     #[error("成功")]
     Success,
     #[error("内部错误，错误信息：`{0}`")]
-    InternalServerError(String),
+    InternalServerError(&'static str),
     #[error("auth fail：`{0}`")]
     AuthFail(String),
     // 业务错误
     #[error("`{1}`")]
-    BusinessError(BusinessCode, String),
+    BusinessError(BusinessCode, &'static str),
 }
 
 impl ResponseError for CustomError {

@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use hmac::{Hmac, Mac};
 use jwt::{Error, FromBase64, SignWithKey, SigningAlgorithm, ToBase64, VerifyWithKey};
 use serde::{Deserialize, Serialize};
@@ -5,7 +6,6 @@ use sha2::Sha256;
 use std::borrow::Cow;
 use std::ops::Deref;
 use std::time::{Duration, SystemTime};
-use anyhow::anyhow;
 
 lazy_static! {
     static ref KEY: Hmac<Sha256> = Hmac::new_from_slice(b"ccccchat").unwrap();
@@ -41,7 +41,7 @@ impl<'a> Jwt<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::middleware::jwt_auth::Jwt;
+    use crate::middleware::Jwt;
 
     #[test]
     fn test1() {
