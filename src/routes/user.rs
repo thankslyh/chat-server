@@ -81,9 +81,25 @@ async fn user_create(
 #[post("/login")]
 async fn user_login(
     db: web::Data<DbConn>,
+    rds: web::Data<redis::Client>,
     body: web::Json<Acc>,
 ) -> actix_web::Result<impl Responder> {
     let email = &body.email;
+    let code = &body.code.clone().ok_or(CustomError::BusinessError(
+        BusinessCode::Success,
+        "请输入验证码",
+    ))?;
+    let mut conn = rds
+        .get_connection_manager()
+        .await
+        .map_err(|_| CustomError::InternalServerError("redis 链接错误"))?;
+    let res = redis::Cmd::get(RedisKey(vec!["verify_code", email]).to_string())
+        .query_async::<_, String>(&mut conn)
+        .await
+        .map_err(|_| CustomError::InternalServerError("redis 读取错误"))?;
+    if !code.eq(&res) {
+        return CustomError::BusinessError(BusinessCode::Success, "验证码错误");
+    }
     let res = service::user::get_user_by_email(&db, &email)
         .await
         .map_err(|err| CustomError::InternalServerError("内部错误"))?;
@@ -182,14 +198,11 @@ async fn send_verify_code(
         .get_connection_manager()
         .await
         .map_err(|e| CustomError::InternalServerError("内部错误"))?;
-    let res = redis::Cmd::mset(&[(
+    let res = redis::Cmd::set_ex(
         RedisKey(vec!["verify_code", &email]).to_string(),
-        RedisKey(vec![
-            &code,
-            &utils::functions::gen_expire_time(chrono::Duration::minutes(5)).to_string(),
-        ])
-        .to_string(),
-    )])
+        &code.to_string(),
+        5 * 60,
+    )
     .query_async::<_, String>(&mut conn)
     .await
     .map_err(|e| CustomError::InternalServerError("内部错误"))?;
