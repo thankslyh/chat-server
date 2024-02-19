@@ -5,8 +5,10 @@ use actix::Actor;
 use actix_web::{web, App, HttpServer};
 use dotenvy::dotenv;
 use env_logger::Env;
+use futures_util::lock::Mutex;
 pub use redis::aio::ConnectionLike;
 use std::env;
+use std::sync::Arc;
 
 mod email;
 pub mod errors;
@@ -17,13 +19,13 @@ pub mod service;
 pub mod socket;
 mod utils;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CtxUser {
     pub id: u64,
     pub uid: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AppState {
     pub user: Option<CtxUser>,
 }
@@ -44,7 +46,7 @@ pub async fn start() -> std::io::Result<()> {
         id: 1,
         uid: "caf1577c-8029-4594-aa76-3915a9719f6c".to_string(),
     };
-    let state = crate::AppState { user: Some(user) };
+    let state = Arc::new(Mutex::new(crate::AppState { user: Some(user) }));
 
     let serv = crate::socket::ChatServer::new().start();
     HttpServer::new(move || {

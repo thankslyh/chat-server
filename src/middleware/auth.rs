@@ -1,11 +1,14 @@
 use actix_web::body::BoxBody;
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
-use actix_web::{Error, HttpResponse, Responder, ResponseError};
+use actix_web::{web, Error, HttpMessage, HttpResponse, Responder, ResponseError};
 use std::future::{ready, Ready};
+use std::ops::Deref;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use crate::middleware::auth::jwt_auth::Jwt;
 use crate::middleware::auth::validator::Validator;
+use crate::{AppState, CtxUser};
 use futures_util::future::LocalBoxFuture;
 use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
@@ -140,6 +143,12 @@ where
             }
             _ => (),
         }
+        let d = req.app_data::<Arc<Mutex<AppState>>>().unwrap().deref();
+        d.lock();
+        let user = d.get_mut().as_ref().unwrap().user.unwrap();
+        user.uid = jwt.email.to_string();
+        user.id = jwt.user_id.parse::<u64>().unwrap();
+        println!("{:#?}", d);
         let fut = self.service.call(req);
         Box::pin(async move {
             let output = fut.await?;

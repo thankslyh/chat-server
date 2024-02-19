@@ -6,10 +6,8 @@ use crate::model::user::Sex;
 use crate::service::RedisKey;
 use crate::{model, service, utils, AppState};
 use actix_web::Responder;
-use futures_util::TryFutureExt;
 use sea_orm::{DbConn, DbErr, TryIntoModel};
 use serde::Deserialize;
-use std::time;
 
 const PREFIX: &'static str = "/user";
 #[get("/list")]
@@ -93,13 +91,19 @@ async fn user_login(
         .get_connection_manager()
         .await
         .map_err(|_| CustomError::InternalServerError("redis 链接错误"))?;
-    let res = redis::Cmd::get(RedisKey(vec!["verify_code", email]).to_string())
+    let _ = redis::Cmd::get(RedisKey(vec!["verify_code", email]).to_string())
         .query_async::<_, String>(&mut conn)
         .await
-        .map_err(|_| CustomError::InternalServerError("redis 读取错误"))?;
-    if !code.eq(&res) {
-        return CustomError::BusinessError(BusinessCode::Success, "验证码错误");
-    }
+        .map_err(|_| CustomError::InternalServerError("redis 读取错误"))
+        .map(|res| {
+            if !code.eq(&res) {
+                return Err(CustomError::BusinessError(
+                    BusinessCode::Success,
+                    "验证码错误",
+                ));
+            }
+            return Ok(res);
+        })?;
     let res = service::user::get_user_by_email(&db, &email)
         .await
         .map_err(|err| CustomError::InternalServerError("内部错误"))?;
